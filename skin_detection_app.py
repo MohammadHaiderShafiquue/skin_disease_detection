@@ -38,6 +38,15 @@ def apply_clahe(image):
     enhanced_image = cv2.cvtColor(limg, cv2.COLOR_LAB2BGR)
     return enhanced_image
 
+# Hair removal function
+def remove_hair(image):
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (17, 17))
+    blackhat = cv2.morphologyEx(gray, cv2.MORPH_BLACKHAT, kernel)
+    _, thresh = cv2.threshold(blackhat, 10, 255, cv2.THRESH_BINARY)
+    inpainted_image = cv2.inpaint(image, thresh, 1, cv2.INPAINT_TELEA)
+    return inpainted_image
+
 # Function to validate if the image is likely a skin-related image
 def is_skin_image(image):
     # Analyze color distribution or use a pre-trained skin detector
@@ -58,6 +67,7 @@ st.sidebar.markdown("Adjust the parameters below:")
 confidence_threshold = st.sidebar.slider(
     "Confidence Threshold", min_value=0.0, max_value=1.0, value=0.6, step=0.05
 )
+apply_hair_removal = st.sidebar.checkbox("Remove Hair from Image", value=False)
 
 uploaded_file = st.file_uploader(
     "📁 Upload an image (JPG, JPEG, or PNG)", 
@@ -76,6 +86,12 @@ if uploaded_file is not None:
         if not is_skin_image(image):
             st.error("⚠️ The uploaded image does not appear to be a skin-related image. Please upload a valid image.")
         else:
+            # Hair removal (if selected)
+            if apply_hair_removal:
+                st.markdown("### ✂️ Image After Hair Removal")
+                image = remove_hair(image)
+                st.image(image, caption="Hair Removed Image", use_column_width=True)
+
             # Apply CLAHE
             st.markdown("### ✨ Enhanced Image with CLAHE")
             enhanced_image = apply_clahe(image)
